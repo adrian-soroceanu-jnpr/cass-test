@@ -51,7 +51,7 @@ pipeline {
 def getCassandraHost(env) {
     switch (env) {
         case 'dev':
-            return 'cassandra-dev-host'
+            return '10.49.233.67'
         case 'staging':
             return 'cassandra-staging-host'
         case 'production':
@@ -65,7 +65,7 @@ def getCassandraHost(env) {
 def deployCQLToCassandra(host) {
     // Loop through all the CQL files and apply them to the specified Cassandra cluster
     sh """
-        for file in keyspaces/**/*.cql; do
+        for file in *.cql; do
             echo "Applying $file to Cassandra host $host..."
             cqlsh $host -u $CASSANDRA_USER -f $file
         done
