@@ -63,7 +63,7 @@ def deployCQLToCassandra(host) {
     sh '''
         for file in *.cql; do
             echo "Applying $file to Cassandra host $host..."
-            ssh -o StrictHostKeyChecking=no root@$10.49.233.67 "cqlsh -f" < $file
+            ssh -o StrictHostKeyChecking=no root@$10.49.233.67 && cqlsh -f $file
         done
     '''
 }
