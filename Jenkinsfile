@@ -1,8 +1,12 @@
 pipeline {
     agent any
 
+    environment {
+        // Jenkins environment variables for Cassandra credentials
+        CASSANDRA_SSH_USER = 'root' // SSH user for Cassandra host
+    }
+
     parameters {
-        // Define environment choices for deployment
         choice(
             name: 'TARGET_ENV',
             choices: ['dev', 'staging', 'production'],
@@ -14,7 +18,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                // Clone the repository containing CQL files
+                // Clone the Git repository containing CQL files
                 git branch: 'main', url: 'https://github.com/adrian-soroceanu-jnpr/cass-test.git'
             }
         }
@@ -22,12 +26,12 @@ pipeline {
         stage('Deploy Schema to Selected Environment') {
             steps {
                 script {
-                    // Map the chosen environment to the correct Cassandra host
+                    // Get the appropriate Cassandra host based on TARGET_ENV
                     def cassandraHost = getCassandraHost(TARGET_ENV)
                     echo "Deploying schema to ${TARGET_ENV} environment on host ${cassandraHost}..."
 
-                    // Deploy schema to the selected Cassandra environment
-                    deployCQLToCassandra(cassandraHost)
+                    // Deploy schema to the selected Cassandra environment over SSH
+                    deployCQLToCassandraViaSSH(cassandraHost)
                 }
             }
         }
@@ -38,7 +42,11 @@ pipeline {
             echo 'Schema deployed successfully!'
         }
         failure {
-            echo 'Deployment failed.'
+            echo 'Deployment failed. Attempting rollback...'
+            script {
+                // Use the rollback function to attempt a rollback on failure
+                rollbackSchema(getCassandraHost(TARGET_ENV))
+            }
         }
     }
 }
@@ -57,13 +65,13 @@ def getCassandraHost(env) {
     }
 }
 
-// Function to deploy the CQL files to the specified Cassandra host
-def deployCQLToCassandra(host) {
-    // Loop through all the CQL files and apply them to the specified Cassandra cluster
-    sh '''
-        for file in *.cql; do
-            echo "Applying $file to Cassandra host $host..."
-            ssh -o StrictHostKeyChecking=no root@$10.49.233.67 && cqlsh -f $file
+// Function to deploy the CQL files to the specified Cassandra host via SSH
+def deployCQLToCassandraViaSSH(host) {
+    // Loop through all the CQL files and apply them on the remote Cassandra server via SSH
+    sh """
+        for file in keyspaces/**/*.cql; do
+            echo "Applying $file to Cassandra on remote host $host..."
+            ssh -o StrictHostKeyChecking=no ${env.CASSANDRA_SSH_USER}@${host} "cqlsh -f -" < \$file
         done
-    '''
+    """
 }
