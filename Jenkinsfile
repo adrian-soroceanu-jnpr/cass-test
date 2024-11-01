@@ -2,9 +2,16 @@ pipeline {
     agent any
 
     environment {
-        CASSANDRA_HOST = 'your-cassandra-host'
         CASSANDRA_USER = 'cassandra'
-        CASSANDRA_PASSWORD = 'password'
+    }
+
+    parameters {
+        // Define environment choices for deployment
+        choice(
+            name: 'TARGET_ENV',
+            choices: ['dev', 'staging', 'production'],
+            description: 'Select the environment to deploy the schema changes'
+        )
     }
 
     stages {
@@ -16,33 +23,15 @@ pipeline {
             }
         }
 
-        stage('Lint & Validate CQL') {
+        stage('Deploy Schema to Selected Environment') {
             steps {
-                // Run a Cassandra linter to validate the CQL files
-                sh 'cassandra-lint keyspaces/**/*.cql'
-            }
-        }
-
-        stage('Test Schema on Staging') {
-            when {
-                branch 'main'
-            }
-            steps {
-                // Deploy changes to the staging Cassandra cluster for testing
                 script {
-                    deployCQLToCassandra('staging')
-                }
-            }
-        }
+                    // Map the chosen environment to the correct Cassandra host
+                    def cassandraHost = getCassandraHost(TARGET_ENV)
+                    echo "Deploying schema to ${TARGET_ENV} environment on host ${cassandraHost}..."
 
-        stage('Deploy Schema to Production') {
-            when {
-                branch 'main'
-            }
-            steps {
-                // Deploy schema changes to the production Cassandra cluster
-                script {
-                    deployCQLToCassandra('production')
+                    // Deploy schema to the selected Cassandra environment
+                    deployCQLToCassandra(cassandraHost)
                 }
             }
         }
@@ -53,29 +42,32 @@ pipeline {
             echo 'Schema deployed successfully!'
         }
         failure {
-            echo 'Deployment failed. Attempting rollback...'
-            script {
-                rollbackSchema()
-            }
+            echo 'Deployment failed.'
         }
     }
 }
 
-def deployCQLToCassandra(environment) {
-    // Environment-specific configuration (staging vs production)
-    def host = (environment == 'production') ? CASSANDRA_HOST : 'your-staging-host'
+// Function to map environment to the correct Cassandra host
+def getCassandraHost(env) {
+    switch (env) {
+        case 'dev':
+            return 'cassandra-dev-host'
+        case 'staging':
+            return 'cassandra-staging-host'
+        case 'production':
+            return 'cassandra-production-host'
+        default:
+            error "Unknown environment: ${env}"
+    }
+}
 
-    // Loop through all the CQL files and apply them to the Cassandra cluster
+// Function to deploy the CQL files to the specified Cassandra host
+def deployCQLToCassandra(host) {
+    // Loop through all the CQL files and apply them to the specified Cassandra cluster
     sh """
         for file in keyspaces/**/*.cql; do
-            echo "Applying $file to $environment Cassandra cluster..."
-            cqlsh $host -u $CASSANDRA_USER -p $CASSANDRA_PASSWORD -f $file
+            echo "Applying $file to Cassandra host $host..."
+            cqlsh $host -u $CASSANDRA_USER -f $file
         done
     """
 }
-
-def rollbackSchema() {
-    // You can implement rollback logic using reverse CQL files or migration scripts
-    echo 'Rollback logic goes here. Reverse the changes or apply the previous schema version.'
-}
-
