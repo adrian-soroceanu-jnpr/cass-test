@@ -43,10 +43,6 @@ pipeline {
         }
         failure {
             echo 'Deployment failed. Attempting rollback...'
-            script {
-                // Use the rollback function to attempt a rollback on failure
-                rollbackSchema(getCassandraHost(TARGET_ENV))
-            }
         }
     }
 }
