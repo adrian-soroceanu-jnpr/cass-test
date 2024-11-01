@@ -64,10 +64,10 @@ def getCassandraHost(env) {
 // Function to deploy the CQL files to the specified Cassandra host
 def deployCQLToCassandra(host) {
     // Loop through all the CQL files and apply them to the specified Cassandra cluster
-    sh """
+    sh '''
         for file in *.cql; do
             echo "Applying $file to Cassandra host $host..."
-            cqlsh $host -u $CASSANDRA_USER -f $file
+            cqlsh $host -f $file
         done
-    """
+    '''
 }
