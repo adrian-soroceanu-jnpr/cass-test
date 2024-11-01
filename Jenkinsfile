@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        CASSANDRA_USER = 'cassandra'
-    }
-
     parameters {
         // Define environment choices for deployment
         choice(
