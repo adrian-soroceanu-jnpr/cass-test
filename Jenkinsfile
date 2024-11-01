@@ -12,7 +12,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Clone the repository containing CQL files
-                git branch: 'main', url: 'https://github.com/your-org/cassandra-schema.git'
+                git branch: 'main', url: 'https://github.com/adrian-soroceanu-jnpr/cass-test.git'
             }
         }
 
