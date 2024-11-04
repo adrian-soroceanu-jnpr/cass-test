@@ -71,7 +71,7 @@ def getEnvironmentFromBranch(branchName) {
 // Deploy CQL files to Cassandra host directly over the network
 def deployCQLToCassandraDirectly(host) {
     sh '''
-        for file in keyspaces/**/*.cql; do
+        for file in *.cql; do
             echo "Applying $file to Cassandra on host $host..."
             cqlsh ${host} ${CASSANDRA_PORT} -f "$file"
         done
