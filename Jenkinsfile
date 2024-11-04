@@ -1,13 +1,9 @@
 pipeline {
     agent any
 
-    parameters {
-        choice(name: 'DEPLOY_FOLDER', choices: ['keyspaces', 'tables'], description: 'Choose which folder to deploy')
-    }
-
     environment {
-        // Cassandra credentials and connection details
-        CASSANDRA_PORT = '9042' // Default Cassandra port
+        // Cassandra credentials
+        CASSANDRA_PORT = '9042' // default Cassandra port
     }
 
     stages {
@@ -39,9 +35,10 @@ pipeline {
         stage('Deploy Schema') {
             steps {
                 script {
-                    def folderToDeploy = params.DEPLOY_FOLDER == 'keyspaces' ? 'keyspaces/**/*.cql' : 'tables/**/*.cql'
-                    echo "Deploying ${params.DEPLOY_FOLDER} schema to ${env.DEPLOYMENT_ENV} environment on host ${env.CASSANDRA_HOST}..."
-                    deployCQLToCassandraDirectly(env.CASSANDRA_HOST, folderToDeploy)
+                    echo "Deploying schema to ${env.DEPLOYMENT_ENV} environment on host ${env.CASSANDRA_HOST}..."
+
+                    // Deploy the schema to the selected environment over the network
+                    deployCQLToCassandraDirectly(env.CASSANDRA_HOST)
                 }
             }
         }
