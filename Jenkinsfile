@@ -2,18 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // Cassandra credentials and SSH user for remote access
-        CASSANDRA_USER = 'cassandra'
-        CASSANDRA_PASSWORD = 'password'
-        CASSANDRA_SSH_USER = 'root' // SSH user for Cassandra host
-    }
-
-    parameters {
-        choice(
-            name: 'TARGET_ENV',
-            choices: ['dev', 'staging', 'production'],
-            description: 'Select the environment to deploy the schema changes'
-        )
+        // Cassandra credentials
+        CASSANDRA_PORT = '9042' // default Cassandra port
     }
 
     stages {
@@ -47,8 +37,8 @@ pipeline {
                 script {
                     echo "Deploying schema to ${env.DEPLOYMENT_ENV} environment on host ${env.CASSANDRA_HOST}..."
 
-                    // Deploy the schema to the selected environment via SSH
-                    deployCQLToCassandraViaSSH(env.CASSANDRA_HOST)
+                    // Deploy the schema to the selected environment over the network
+                    deployCQLToCassandraDirectly(env.CASSANDRA_HOST)
                 }
             }
         }
@@ -78,12 +68,12 @@ def getEnvironmentFromBranch(branchName) {
     }
 }
 
-// Deploy CQL files to Cassandra host via SSH
-def deployCQLToCassandraViaSSH(host) {
-    sh '''#!/bin/bash
-        for file in *.cql; do
-            echo "Applying $file to Cassandra on remote host $host..."
-            "cqlsh 10.49.233.67 9042 -f $file"
+// Deploy CQL files to Cassandra host directly over the network
+def deployCQLToCassandraDirectly(host) {
+    sh """
+        for file in keyspaces/**/*.cql; do
+            echo "Applying $file to Cassandra on host $host..."
+            cqlsh ${host} ${env.CASSANDRA_PORT} -f \$file
         done
-    '''
+    """
 }
