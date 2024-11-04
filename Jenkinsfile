@@ -39,7 +39,7 @@ pipeline {
         stage('Deploy Schema') {
             steps {
                 script {
-                    def folderToDeploy = params.DEPLOY_FOLDER == 'keyspaces' ? 'keyspaces/*.cql' : 'tables/*.cql'
+                    def folderToDeploy = params.DEPLOY_FOLDER == 'keyspaces' ? '*.cql' : '*.cql'
                     echo "Deploying ${params.DEPLOY_FOLDER} schema to ${env.DEPLOYMENT_ENV} environment on host ${env.CASSANDRA_HOST}..."
                     deployCQLToCassandraDirectly(env.CASSANDRA_HOST, folderToDeploy)
                 }
@@ -74,9 +74,9 @@ def getEnvironmentFromBranch(branchName) {
 // Deploy CQL files to Cassandra host directly over the network
 def deployCQLToCassandraDirectly(host, folder) {
     sh '''
-        for file in ${folder}; do
+        for file in ${DEPLOY_FOLDER}; do
             echo "Applying \$file to Cassandra on host ${host}..."
-            cqlsh ${CASSANDRA_HOST} ${env.CASSANDRA_PORT} -f "$file"
+            cqlsh ${CASSANDRA_HOST} ${CASSANDRA_PORT} -f "$file"
         done
     '''.stripMargin()
 }
