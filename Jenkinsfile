@@ -32,7 +32,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout the code from the corresponding Git branch for each environment
-                git branch: "${env.GIT_BRANCH}", url: 'https://github.com/your-org/cassandra-schema.git'
+                git branch: "${env.GIT_BRANCH}", url: 'https://github.com/adrian-soroceanu-jnpr/cass-test.git'
             }
         }
 
@@ -61,7 +61,7 @@ pipeline {
 def getEnvironmentFromBranch(branchName) {
     switch (branchName) {
         case 'dev':
-            return [envName: 'Development', host: 'cassandra-dev-host', gitBranch: 'dev']
+            return [envName: 'Development', host: '10.49.233.67', gitBranch: 'dev']
         case 'staging':
             return [envName: 'Staging', host: 'cassandra-staging-host', gitBranch: 'staging']
         case 'production':
