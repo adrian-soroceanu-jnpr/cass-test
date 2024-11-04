@@ -3,7 +3,17 @@ pipeline {
 
     environment {
         // Cassandra credentials and SSH user for remote access
-        CASSANDRA_SSH_USER = 'cassandra_user' // SSH user for Cassandra host
+        CASSANDRA_USER = 'cassandra'
+        CASSANDRA_PASSWORD = 'password'
+        CASSANDRA_SSH_USER = 'root' // SSH user for Cassandra host
+    }
+
+    parameters {
+        choice(
+            name: 'TARGET_ENV',
+            choices: ['dev', 'staging', 'production'],
+            description: 'Select the environment to deploy the schema changes'
+        )
     }
 
     stages {
@@ -58,7 +68,7 @@ pipeline {
 def getEnvironmentFromBranch(branchName) {
     switch (branchName) {
         case 'dev':
-            return [envName: 'Development', host: '10.49.233.67', gitBranch: 'dev']
+            return [envName: 'Development', host: 'cassandra-dev-host', gitBranch: 'dev']
         case 'staging':
             return [envName: 'Staging', host: 'cassandra-staging-host', gitBranch: 'staging']
         case 'production':
@@ -71,7 +81,7 @@ def getEnvironmentFromBranch(branchName) {
 // Deploy CQL files to Cassandra host via SSH
 def deployCQLToCassandraViaSSH(host) {
     sh '''
-        for file in keyspaces/**/*.cql; do
+        for file in *.cql; do
             echo "Applying $file to Cassandra on remote host $host..."
             ssh -o StrictHostKeyChecking=no ${env.CASSANDRA_SSH_USER}@${host} "cqlsh -f -" < \$file
         done
