@@ -4,6 +4,7 @@ pipeline {
     environment {
         // Cassandra credentials
         CASSANDRA_PORT = '9042' // default Cassandra port
+        HOST = 
     }
 
     stages {
@@ -73,7 +74,7 @@ def deployCQLToCassandraDirectly(host) {
     sh '''
         for file in *.cql; do
             echo "Applying $file to Cassandra on host $host..."
-            cqlsh ${host} ${CASSANDRA_PORT} -f "$file"
+            cqlsh ${CASSANDRA_HOST} ${CASSANDRA_PORT} -f "$file"
         done
     '''.stripMargin()
 }
