@@ -39,7 +39,7 @@ pipeline {
         stage('Deploy Schema') {
             steps {
                 script {
-                    def folderToDeploy = params.DEPLOY_FOLDER == 'keyspaces' ? 'keyspaces/**/*.cql' : 'tables/**/*.cql'
+                    def folderToDeploy = params.DEPLOY_FOLDER == 'keyspaces' ? 'keyspaces/*.cql' : 'tables/*.cql'
                     echo "Deploying ${params.DEPLOY_FOLDER} schema to ${env.DEPLOYMENT_ENV} environment on host ${env.CASSANDRA_HOST}..."
                     deployCQLToCassandraDirectly(env.CASSANDRA_HOST, folderToDeploy)
                 }
