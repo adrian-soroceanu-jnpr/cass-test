@@ -1,4 +1,4 @@
-CREATE TABLE acs_vm_metrics.vm_ips_15m (
+CREATE TABLE IF NOT EXISTS acs_vm_metrics.vm_ips_15m (
     site_id text,
     ts timestamp,
     h_host text,
