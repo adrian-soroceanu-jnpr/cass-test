@@ -68,7 +68,7 @@ pipeline {
 def getEnvironmentFromBranch(branchName) {
     switch (branchName) {
         case 'dev':
-            return [envName: 'Development', host: 'cassandra-dev-host', gitBranch: 'dev']
+            return [envName: 'Development', host: '10.49.233.67', gitBranch: 'dev']
         case 'staging':
             return [envName: 'Staging', host: 'cassandra-staging-host', gitBranch: 'staging']
         case 'production':
