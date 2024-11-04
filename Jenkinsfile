@@ -1,9 +1,13 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(name: 'DEPLOY_FOLDER', choices: ['keyspaces', 'tables'], description: 'Choose which folder to deploy')
+    }
+
     environment {
-        // Cassandra credentials
-        CASSANDRA_PORT = '9042' // default Cassandra port
+        // Cassandra credentials and connection details
+        CASSANDRA_PORT = '9042' // Default Cassandra port
     }
 
     stages {
@@ -28,17 +32,16 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout the code from the corresponding Git branch for each environment
-                git branch: "${env.GIT_BRANCH}", url: 'https://github.com/adrian-soroceanu-jnpr/cass-test.git'
+                git branch: "${env.GIT_BRANCH}", url: 'https://github.com/your-org/cassandra-schema.git'
             }
         }
 
         stage('Deploy Schema') {
             steps {
                 script {
-                    echo "Deploying schema to ${env.DEPLOYMENT_ENV} environment on host ${env.CASSANDRA_HOST}..."
-
-                    // Deploy the schema to the selected environment over the network
-                    deployCQLToCassandraDirectly(env.CASSANDRA_HOST)
+                    def folderToDeploy = params.DEPLOY_FOLDER == 'keyspaces' ? 'keyspaces/**/*.cql' : 'tables/**/*.cql'
+                    echo "Deploying ${params.DEPLOY_FOLDER} schema to ${env.DEPLOYMENT_ENV} environment on host ${env.CASSANDRA_HOST}..."
+                    deployCQLToCassandraDirectly(env.CASSANDRA_HOST, folderToDeploy)
                 }
             }
         }
@@ -58,7 +61,7 @@ pipeline {
 def getEnvironmentFromBranch(branchName) {
     switch (branchName) {
         case 'dev':
-            return [envName: 'Development', host: '10.49.233.67', gitBranch: 'dev']
+            return [envName: 'Development', host: 'cassandra-dev-host', gitBranch: 'dev']
         case 'staging':
             return [envName: 'Staging', host: 'cassandra-staging-host', gitBranch: 'staging']
         case 'production':
@@ -69,11 +72,11 @@ def getEnvironmentFromBranch(branchName) {
 }
 
 // Deploy CQL files to Cassandra host directly over the network
-def deployCQLToCassandraDirectly(host) {
+def deployCQLToCassandraDirectly(host, folder) {
     sh '''
-        for file in *.cql; do
-            echo "Applying $file to Cassandra on host $host..."
-            cqlsh ${CASSANDRA_HOST} ${CASSANDRA_PORT} -f "$file"
+        for file in ${folder}; do
+            echo "Applying \$file to Cassandra on host ${host}..."
+            cqlsh ${CASSANDRA_HOST} ${env.CASSANDRA_PORT} -f "$file"
         done
     '''.stripMargin()
 }
