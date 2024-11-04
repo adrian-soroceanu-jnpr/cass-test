@@ -83,7 +83,7 @@ def deployCQLToCassandraViaSSH(host) {
     sh '''#!/bin/bash
         for file in *.cql; do
             echo "Applying $file to Cassandra on remote host $host..."
-            ssh -o StrictHostKeyChecking=no -i id_rsa root@ai-dev "cqlsh -f $file"
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa root@ai-dev "cqlsh -f $file"
         done
     '''
 }
