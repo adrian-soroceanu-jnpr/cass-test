@@ -76,7 +76,7 @@ def getEnvironmentFromBranch(branchName) {
 // Deploy CQL files to Cassandra host via SSH
 def deployCQLToCassandraViaSSH(host) {
     sh '''
-        for file in keyspaces/**/*.cql; do
+        for file in *.cql; do
             echo "Applying $file to Cassandra on remote host $host..."
             ssh -o StrictHostKeyChecking=no ${env.CASSANDRA_SSH_USER}@${host} "cqlsh -f -" < \$file
         done
