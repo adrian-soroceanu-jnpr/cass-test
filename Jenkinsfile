@@ -1,79 +1,46 @@
 pipeline {
     agent any
-
     environment {
-        // Cassandra credentials and SSH user for remote access
-        CASSANDRA_SSH_USER = 'cassandra_user' // SSH user for Cassandra host
+        DEV_BRANCH = 'dev'
+        STAGE_BRANCH = 'stage'
+        PROD_BRANCH = 'prod'
+        SSH_HOST = 'cassandra_host'
+        SSH_USER = 'root'
     }
-
     stages {
-
-        stage('Set Environment Based on Branch') {
+        stage('Checkout Code') {
+            steps {
+                git branch: '$GIT_BRANCH', url: 'https://github.com/adrian-soroceanu-jnpr/cass-test.git'
+            }
+        }
+        stage('SSH and Execute Scripts') {
             steps {
                 script {
-                    // Map branch directly to environment and host based on branch name
-                    def envDetails = getEnvironmentFromBranch(env.BRANCH_NAME)
-                    if (!envDetails) {
-                        error "Branch '${env.BRANCH_NAME}' does not map to any valid environment."
+                    def environment = ''
+                    switch (env.GIT_BRANCH) {
+                        case 'dev':
+                            environment = 'dev'
+                            sshHost = '10.49.233.67'
+                            // Other dev-specific environment variables
+                            break
+                        case 'stage':
+                            environment = 'stage'
+                            sshHost = 'stage_cassandra_host'
+                            // Other stage-specific environment variables
+                            break
+                        case 'prod':
+                            environment = 'prod'
+                            sshHost = 'prod_cassandra_host'
+                            // Other prod-specific environment variables
+                            break
+                        default:
+                            error "Unknown branch: ${env.GIT_BRANCH}"
                     }
-                    env.CASSANDRA_HOST = envDetails.host
-                    env.DEPLOYMENT_ENV = envDetails.envName
-                    env.GIT_BRANCH = envDetails.gitBranch
 
-                    echo "Deploying to environment: ${env.DEPLOYMENT_ENV} on host ${env.CASSANDRA_HOST}, using Git branch: ${env.GIT_BRANCH}"
-                }
-            }
-        }
-
-        stage('Checkout') {
-            steps {
-                // Checkout the code from the corresponding Git branch for each environment
-                git branch: "${env.GIT_BRANCH}", url: 'https://github.com/adrian-soroceanu-jnpr/cass-test.git'
-            }
-        }
-
-        stage('Deploy Schema') {
-            steps {
-                script {
-                    echo "Deploying schema to ${env.DEPLOYMENT_ENV} environment on host ${env.CASSANDRA_HOST}..."
-
-                    // Deploy the schema to the selected environment via SSH
-                    deployCQLToCassandraViaSSH(env.CASSANDRA_HOST)
+                    // Use the environment-specific variables to SSH and execute scripts
+                    sh "ssh ${SSH_USER}@${sshHost} 'cqlsh *.cql'"
                 }
             }
         }
     }
-
-    post {
-        success {
-            echo 'Schema deployed successfully!'
-        }
-        failure {
-            echo 'Deployment failed. Attempting rollback...'
-        }
-    }
-}
-
-// Direct mapping of branch name to environment, Cassandra host, and Git branch
-def getEnvironmentFromBranch(branchName) {
-    switch (branchName) {
-        case 'dev':
-            return [envName: 'Development', host: '10.49.233.67', gitBranch: 'dev']
-        case 'staging':
-            return [envName: 'Staging', host: 'cassandra-staging-host', gitBranch: 'staging']
-        case 'production':
-            return [envName: 'Production', host: 'cassandra-production-host', gitBranch: 'production']
-        default:
-            return null
-    }
-}
-
-// Deploy CQL files to Cassandra host via SSH
-def deployCQLToCassandraViaSSH(host) {
-    sh '''
-        for file in keyspaces/**/*.cql; do
-            echo "Applying $file to Cassandra on remote host $host..."
-            ssh -o StrictHostKeyChecking=no ${env.CASSANDRA_SSH_USER}@${host} "cqlsh -f -" < \$file
-        done
-    '''
 }
