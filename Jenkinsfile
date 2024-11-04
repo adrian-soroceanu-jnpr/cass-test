@@ -4,7 +4,6 @@ pipeline {
     environment {
         // Cassandra credentials
         CASSANDRA_PORT = '9042' // default Cassandra port
-        HOST = 
     }
 
     stages {
