@@ -8,6 +8,14 @@ pipeline {
         CASSANDRA_SSH_USER = 'root' // SSH user for Cassandra host
     }
 
+    parameters {
+        choice(
+            name: 'TARGET_ENV',
+            choices: ['dev', 'staging', 'production'],
+            description: 'Select the environment to deploy the schema changes'
+        )
+    }
+
     stages {
 
         stage('Set Environment Based on Branch') {
@@ -52,9 +60,6 @@ pipeline {
         }
         failure {
             echo 'Deployment failed. Attempting rollback...'
-            script {
-                rollbackSchema(env.CASSANDRA_HOST)
-            }
         }
     }
 }
