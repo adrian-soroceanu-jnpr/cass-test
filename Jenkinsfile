@@ -62,9 +62,9 @@ def getEnvironmentFromBranch(branchName) {
     switch (branchName) {
         case 'dev':
             return [envName: 'Development', host: '10.49.233.251', gitBranch: 'dev']
-        case 'staging':
+        case 'stage':
             return [envName: 'Staging', host: '10.49.233.251', gitBranch: 'stage']
-        case 'production':
+        case 'prod':
             return [envName: 'Production', host: '10.49.233.251', gitBranch: 'prod']
         default:
             return null
