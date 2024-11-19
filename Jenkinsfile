@@ -3,6 +3,9 @@ pipeline {
 
     parameters {
         choice(name: 'DEPLOY_FOLDER', choices: ['keyspaces', 'tables'], description: 'Choose which folder to deploy')
+        booleanParam(name: 'DELETE_OBJECTS', defaultValue: false, description: 'Set to true to delete keyspaces or tables')
+        string(name: 'OBJECT_NAME', defaultValue: '', description: 'Specify the keyspace or table name to delete (e.g., keyspace.table)')
+        choice(name: 'OBJECT_TYPE', choices: ['keyspace', 'table'], description: 'Choose object type to delete')
     }
 
     environment {
@@ -36,6 +39,16 @@ pipeline {
             }
         }
 
+        stage('Delete Keyspace/Table') {
+            when {
+                expression { return params.DELETE_OBJECTS && params.OBJECT_NAME?.trim() }
+            }
+            steps {
+                script {
+                    deleteKeyspaceOrTable(params.OBJECT_TYPE, params.OBJECT_NAME, env.CASSANDRA_HOST)
+                }
+            }
+        }
         stage('Deploy Schema') {
             steps {
                 script {
@@ -61,11 +74,11 @@ pipeline {
 def getEnvironmentFromBranch(branchName) {
     switch (branchName) {
         case 'dev':
-            return [envName: 'Development', host: '10.49.233.251', gitBranch: 'dev']
+            return [envName: 'Development', host: '10.49.234.9', gitBranch: 'dev']
         case 'stage':
-            return [envName: 'Staging', host: '10.49.233.251', gitBranch: 'stage']
+            return [envName: 'Staging', host: '10.49.234.9', gitBranch: 'stage']
         case 'prod':
-            return [envName: 'Production', host: '10.49.233.251', gitBranch: 'prod']
+            return [envName: 'Production', host: '10.49.234.9', gitBranch: 'prod']
         default:
             return null
     }
@@ -78,5 +91,26 @@ def deployCQLToCassandraDirectly(host, folder) {
             echo "Applying \$file to Cassandra on host ${host}..."
             cqlsh ${CASSANDRA_HOST} ${CASSANDRA_PORT} -f "$file"
         done
+    '''.stripMargin()
+}
+
+// Delete a keyspace or table in Cassandra
+def deleteKeyspaceOrTable(type, name, host) {
+    def dropCommand
+    if (type == 'keyspace') {
+        dropCommand = "DROP KEYSPACE IF EXISTS ${name};"
+    } else if (type == 'table') {
+        def parts = name.split("\\.")
+        if (parts.size() != 2) {
+            error "Table name must be in the format keyspace.table"
+        }
+        dropCommand = "DROP TABLE IF EXISTS ${name};"
+    } else {
+        error "Unsupported object type: ${type}"
+    }
+
+    sh '''
+        echo "Executing drop command: ${dropCommand}"
+        echo "${dropCommand}" | cqlsh ${CASSANDRA_HOST}
     '''.stripMargin()
 }
