@@ -2,10 +2,26 @@ pipeline {
     agent any
 
     parameters {
-        choice(name: 'DEPLOY_FOLDER', choices: ['keyspaces', 'tables'], description: 'Choose which folder to deploy')
-        booleanParam(name: 'DELETE_OBJECTS', defaultValue: false, description: 'Set to true to delete keyspaces or tables')
-        string(name: 'OBJECT_NAME', defaultValue: '', description: 'Specify the keyspace or table name to delete (e.g., keyspace.table)')
-        choice(name: 'OBJECT_TYPE', choices: ['keyspace', 'table'], description: 'Choose object type to delete')
+        choice(
+            name: 'OPERATION',
+            choices: ['deploy', 'delete'],
+            description: 'Choose the operation to perform: deploy schema or delete objects'
+        )
+        choice(
+            name: 'DEPLOY_FOLDER',
+            choices: ['keyspaces', 'tables'],
+            description: 'Choose which folder to deploy (only for deploy operation)'
+        )
+        string(
+            name: 'OBJECT_NAME',
+            defaultValue: '',
+            description: 'Specify the keyspace or table name to delete (e.g., keyspace.table) (only for delete operation)'
+        )
+        choice(
+            name: 'OBJECT_TYPE',
+            choices: ['keyspace', 'table'],
+            description: 'Choose the object type to delete (only for delete operation)'
+        )
     }
 
     environment {
@@ -33,6 +49,9 @@ pipeline {
         }
 
         stage('Checkout') {
+            when {
+                expression { return params.OPERATION == 'deploy' }
+            }
             steps {
                 // Checkout the code from the corresponding Git branch for each environment
                 git branch: "${env.GIT_BRANCH}", url: 'https://github.com/adrian-soroceanu-jnpr/cass-test.git'
@@ -41,7 +60,7 @@ pipeline {
 
         stage('Delete Keyspace/Table') {
             when {
-                expression { return params.DELETE_OBJECTS && params.OBJECT_NAME?.trim() }
+                expression { return params.OPERATION == 'delete' && params.OBJECT_NAME?.trim() }
             }
             steps {
                 script {
@@ -50,6 +69,9 @@ pipeline {
             }
         }
         stage('Deploy Schema') {
+            when {
+                expression { return params.OPERATION == 'deploy' }
+            }
             steps {
                 script {
                     def folderToDeploy = params.DEPLOY_FOLDER == 'keyspaces' ? '*.cql' : '*.cql'
@@ -65,7 +87,7 @@ pipeline {
             echo 'Schema deployed successfully!'
         }
         failure {
-            echo 'Deployment failed. Attempting rollback...'
+            echo 'Deployment failed.'
         }
     }
 }
