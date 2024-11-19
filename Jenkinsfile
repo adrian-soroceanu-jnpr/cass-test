@@ -60,7 +60,10 @@ pipeline {
 
         stage('Delete Keyspace/Table') {
             when {
-                expression { return params.OPERATION == 'delete' && params.OBJECT_NAME?.trim() }
+                 allOf {
+                    expression { return params.OPERATION == 'delete' }
+                    expression { return params.OBJECT_NAME?.trim() != '' }
+                }
             }
             steps {
                 script {
