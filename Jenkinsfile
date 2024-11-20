@@ -134,8 +134,8 @@ def deleteKeyspaceOrTable(type, name, host) {
         error "Unsupported object type: ${type}"
     }
 
-    sh '''
+    sh """
         echo "Executing drop command: ${dropCommand}"
         echo "${dropCommand}" | cqlsh ${CASSANDRA_HOST}
-    '''.stripMargin()
+    """.stripMargin()
 }
