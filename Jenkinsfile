@@ -121,18 +121,22 @@ def deployCQLToCassandraDirectly(host, folder) {
 
 // Delete a keyspace or table in Cassandra
 def deleteKeyspaceOrTable(type, name, host) {
-    def dropCommand
-    if (type == 'keyspace') {
-        dropCommand = "DROP KEYSPACE IF EXISTS ${name};"
-    } else if (type == 'table') {
-        def parts = name.split("\\.")
-        if (parts.size() != 2) {
-            error "Table name must be in the format keyspace.table"
-        }
-        dropCommand = "DROP TABLE IF EXISTS ${name};"
-    } else {
-        error "Unsupported object type: ${type}"
+    if (!names || names.isEmpty()) {
+        error "No objects provided for deletion."
     }
+    def dropCommands = names.collect { name ->
+        if (type == 'keyspace') {
+            return "DROP KEYSPACE IF EXISTS ${name};"
+        } else if (type == 'table') {
+            def parts = name.split("\\.")
+            if (parts.size() != 2) {
+                error "Table name must be in the format keyspace.table (invalid name: ${name})"
+            }
+            return "DROP TABLE IF EXISTS ${name};"
+        } else {
+            error "Unsupported object type: ${type}"
+        }
+    }.join("\n")
 
     sh """
         echo "Executing drop command: ${dropCommand}"
