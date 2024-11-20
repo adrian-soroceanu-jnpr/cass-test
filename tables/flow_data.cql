@@ -1,4 +1,4 @@
-CREATE TABLE flow_data.acs_sflow_10m (
+CREATE TABLE IF NOT EXISTS flow_data.acs_sflow_10m (
     site_id text,
     ts timestamp,
     server_port int,
