@@ -137,4 +137,5 @@ def deleteKeyspaceOrTable(type, name, host) {
     sh """
         echo "Executing drop command: ${dropCommand}"
         echo "${dropCommand}" | cqlsh ${CASSANDRA_HOST}
-    """.stripMargin()}
+    """.stripMargin()
+}
