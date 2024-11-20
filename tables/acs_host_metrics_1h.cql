@@ -1,4 +1,4 @@
-CREATE TABLE acs_vm_metrics.host_metrics_by_hostname_1h (
+CREATE TABLE IF NOT EXISTS acs_vm_metrics.host_metrics_by_hostname_1h (
     site_id text,
     h_host text,
     metric text,
