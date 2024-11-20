@@ -132,7 +132,7 @@ def deleteKeyspaceOrTable(type, names, host) {
     }
 
     // Compile DROP statements
-    def dropCommands = names.collect { name ->
+    def dropCommand = names.collect { name ->
         if (type == 'keyspace') {
             return "DROP KEYSPACE IF EXISTS ${name};"
         } else if (type == 'table') {
