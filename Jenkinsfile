@@ -121,10 +121,17 @@ def deployCQLToCassandraDirectly(host, folder) {
 }
 
 // Delete a keyspace or table in Cassandra
-def deleteKeyspaceOrTable(type, name, host) {
+def deleteKeyspaceOrTable(type, names, host) {
     if (!names || names.isEmpty()) {
         error "No objects provided for deletion."
     }
+
+    // Ensure names is a list
+    if (names instanceof String) {
+        names = names.split(',').collect { it.trim() }
+    }
+
+    // Compile DROP statements
     def dropCommands = names.collect { name ->
         if (type == 'keyspace') {
             return "DROP KEYSPACE IF EXISTS ${name};"
