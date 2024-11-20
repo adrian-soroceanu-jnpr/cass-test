@@ -67,7 +67,8 @@ pipeline {
             }
             steps {
                 script {
-                    deleteKeyspaceOrTable(params.OBJECT_TYPE, params.OBJECT_NAME, env.CASSANDRA_HOST)
+                    def objectNames = params.OBJECT_NAME.split(',').collect { it.trim() }
+                    deleteKeyspaceOrTable(params.OBJECT_TYPE, objectNames, env.CASSANDRA_HOST)
                 }
             }
         }
