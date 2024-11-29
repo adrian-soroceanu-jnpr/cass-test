@@ -58,6 +58,37 @@ pipeline {
             }
         }
 
+        stage('Validate Deletion Files') {
+            when {
+                expression { return params.OPERATION == 'delete' }
+            }
+            steps {
+                script {
+                    def objectNames = params.OBJECT_NAME.split(',').collect { it.trim() }
+
+                    // Directories to check based on object type
+                    def directory = params.OBJECT_TYPE == 'keyspace' ? 'keyspaces' : 'tables'
+
+                    objectNames.each { name ->
+                        // Build the expected filename
+                        def filePattern = params.OBJECT_TYPE == 'keyspace' ? "${directory}/${name}.cql" : "${directory}/${name.split('\\.')[1]}.cql"
+
+                        // Check if the file exists
+                        def fileExists = sh(
+                            script: "grep -rl '${filePattern}' ${directory} || true",
+                            returnStatus: true
+                        )
+
+                        if (fileExists == 0) {
+                            error "File for ${params.OBJECT_TYPE} '${name}' still exists in the repository (${filePattern}). Cannot proceed with deletion."
+                        } else {
+                            echo "File for ${params.OBJECT_TYPE} '${name}' is not present in the repository. Proceeding with deletion."
+                        }
+                    }
+                }
+            }
+        }
+        
         stage('Delete Keyspace/Table') {
             when {
                  allOf {
