@@ -70,7 +70,7 @@ stage('Validate Deletion Objects') {
             def directory = params.OBJECT_TYPE == 'keyspace' ? 'keyspaces' : 'tables'
 
             objectNames.each { name ->
-                def searchText = params.OBJECT_TYPE == 'keyspace' ? "CREATE KEYSPACE ${name}" : "CREATE TABLE ${name}"
+                def searchText = params.OBJECT_TYPE == 'keyspace' ? "CREATE KEYSPACE IF NOT EXISTS ${name}" : "CREATE TABLE IF NOT EXISTS ${name}"
 
                 // Check if the name exists in any .cql file
                 def matchFound = sh(
