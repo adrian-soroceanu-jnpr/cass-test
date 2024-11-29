@@ -58,7 +58,7 @@ pipeline {
             }
         }
 
-stage('Validate Deletion Files') {
+stage('Validate Deletion Objects') {
     when {
         expression { return params.OPERATION == 'delete' }
     }
@@ -70,20 +70,18 @@ stage('Validate Deletion Files') {
             def directory = params.OBJECT_TYPE == 'keyspace' ? 'keyspaces' : 'tables'
 
             objectNames.each { name ->
-                // Extract the file name (for tables, we only need the table part after ".")
-                def fileName = params.OBJECT_TYPE == 'keyspace' ? name : name.split('\\.')[1]
-                def filePath = "${directory}/${fileName}.cql"
+                def searchText = params.OBJECT_TYPE == 'keyspace' ? "CREATE KEYSPACE ${name}" : "CREATE TABLE ${name}"
 
-                // Check if the file exists
-                def fileExists = sh(
-                    script: "test -f ${filePath} && echo 'exists' || echo 'not exists'",
+                // Check if the name exists in any .cql file
+                def matchFound = sh(
+                    script: "grep -rl '${searchText}' ${directory} || true",
                     returnStdout: true
                 ).trim()
 
-                if (fileExists == 'exists') {
-                    error "File for ${params.OBJECT_TYPE} '${name}' still exists in the repository (${filePath}). Cannot proceed with deletion."
+                if (matchFound) {
+                    error "Deletion not allowed: ${params.OBJECT_TYPE} '${name}' is still defined in the repository. Found in files:\n${matchFound}"
                 } else {
-                    echo "File for ${params.OBJECT_TYPE} '${name}' is not present in the repository. Proceeding with deletion."
+                    echo "No match for ${params.OBJECT_TYPE} '${name}' in ${directory}. Proceeding with deletion."
                 }
             }
         }
