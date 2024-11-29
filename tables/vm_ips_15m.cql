@@ -19,4 +19,4 @@ CREATE TABLE IF NOT EXISTS acs_vm_metrics.vm_ips_15m (
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
     AND min_index_interval = 128
-    AND speculative_retry = '99PERCENTILE';%     
+    AND speculative_retry = '99PERCENTILE';
