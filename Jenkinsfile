@@ -24,11 +24,11 @@ pipeline {
         )
         choice(name: 'UPDATE_FOLDER', 
                choices: ['keyspace', 'table'], 
-               description: 'Select the object typec to update.')
+               description: 'Select the object type to update.')
         
         string(name: 'UPDATE_FILE', 
                defaultValue: '', 
-               description: 'Comma-separated list of objects (e.g., keyspace1 or keyspace1.table1).')
+               description: 'Specify the relative path in the repo, e.g update/table/file_name.cql.')
     }
 
     environment {
