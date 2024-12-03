@@ -149,7 +149,7 @@ stage('Validate Deletion Objects') {
                         // Execute the update
                         echo "Applying update for ${params.OBJECT_TYPE} '${name}' using file ${filePath}."
                         sh '''
-                            cqlsh ${CASSANDRA_HOST} ${CASSANDRA_PORT} -f ${filePath}
+                            cqlsh ${CASSANDRA_HOST} ${CASSANDRA_PORT} -f "$filePath"
                         '''.stripMargin()
                     }
                 }
