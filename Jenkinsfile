@@ -13,20 +13,20 @@ pipeline {
             description: 'Choose which folder to deploy (only for deploy operation)'
         )
         string(
-            name: 'OBJECT_NAME',
+            name: 'DELETE_OBJECT',
             defaultValue: '',
             description: 'Specify the keyspace or table name to delete (e.g., keyspace.table) (only for delete operation)'
         )
         choice(
-            name: 'OBJECT_TYPE',
+            name: 'DELETE_FOLDER',
             choices: ['keyspace', 'table'],
             description: 'Choose the object type to delete (only for delete operation)'
         )
-        choice(name: 'OBJECT_TYPE', 
+        choice(name: 'UPDATE_FOLDER', 
                choices: ['keyspace', 'table'], 
-               description: 'Select the object type.')
+               description: 'Select the object typec to update.')
         
-        string(name: 'OBJECT_NAME', 
+        string(name: 'UPDATE_FILE', 
                defaultValue: '', 
                description: 'Comma-separated list of objects (e.g., keyspace1 or keyspace1.table1).')
     }
