@@ -129,7 +129,7 @@ stage('Update Keyspace/Table') {
     }
     steps {
         script {
-            // Assume OBJECT_NAME is the relative file path provided by the user
+            // Get the file path provided by the user
             def filePath = params.OBJECT_NAME.trim()
 
             // Ensure the file exists
@@ -142,11 +142,14 @@ stage('Update Keyspace/Table') {
                 error "Update file '${filePath}' not found in the repository. Cannot proceed."
             }
 
+            // Debugging: Output the file path to ensure it's correct
+            echo "Applying update using file '${filePath}'."
+
             // Execute the update
-            echo "Applying update using file ${filePath}."
-            sh '''
-                cqlsh ${CASSANDRA_HOST} ${CASSANDRA_PORT} -f "${params.filePath}"
-            '''.stripMargin()
+            sh """
+                cqlsh ${params.CASSANDRA_HOST} ${env.CASSANDRA_PORT} \
+                    -f ${filePath}
+            """
         }
     }
 }
