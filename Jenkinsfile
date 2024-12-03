@@ -133,7 +133,7 @@ stage('Validate Deletion Objects') {
                     def directory = params.OBJECT_TYPE == 'keyspace' ? 'update/keyspace' : 'update/table'
 
                     objectNames.each { name ->
-                        def fileName = params.OBJECT_TYPE == 'keyspace' ? "${name}_update.cql" : "${name.split('\\.')[1]}_update.cql"
+                        def fileName = params.OBJECT_TYPE == 'keyspace' ? "${name}" : "${name.split('\\.')[1]}"
                         def filePath = "${directory}/${fileName}"
 
                         // Ensure the file exists
