@@ -22,6 +22,13 @@ pipeline {
             choices: ['keyspace', 'table'],
             description: 'Choose the object type to delete (only for delete operation)'
         )
+        choice(name: 'OBJECT_TYPE', 
+               choices: ['keyspace', 'table'], 
+               description: 'Select the object type.')
+        
+        string(name: 'OBJECT_NAME', 
+               defaultValue: '', 
+               description: 'Comma-separated list of objects (e.g., keyspace1 or keyspace1.table1).')
     }
 
     environment {
