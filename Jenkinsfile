@@ -150,9 +150,7 @@ stage('Update Keyspace/Table') {
         }
     }
 }
-        }
     }
-
     post {
         success {
             echo 'Schema deployed successfully!'
@@ -161,6 +159,7 @@ stage('Update Keyspace/Table') {
             echo 'Deployment failed.'
         }
     }
+}
 
 // Direct mapping of branch name to environment, Cassandra host, and Git branch
 def getEnvironmentFromBranch(branchName) {
