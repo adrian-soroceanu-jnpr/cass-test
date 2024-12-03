@@ -123,37 +123,33 @@ stage('Validate Deletion Objects') {
             }
         }
 
-       stage('Update Keyspace/Table') {
-            when {
-                expression { return params.OPERATION == 'update' }
+stage('Update Keyspace/Table') {
+    when {
+        expression { return params.OPERATION == 'update' }
+    }
+    steps {
+        script {
+            // Assume OBJECT_NAME is the relative file path provided by the user
+            def filePath = params.OBJECT_NAME.trim()
+
+            // Ensure the file exists
+            def fileExists = sh(
+                script: "test -f ${filePath} && echo 'exists' || echo 'not exists'",
+                returnStdout: true
+            ).trim()
+
+            if (fileExists != 'exists') {
+                error "Update file '${filePath}' not found in the repository. Cannot proceed."
             }
-            steps {
-                script {
-                    def objectNames = params.OBJECT_NAME.split(',').collect { it.trim() }
-                    def directory = params.OBJECT_TYPE == 'keyspace' ? 'update/keyspace' : 'update/table'
 
-                    objectNames.each { name ->
-                        def fileName = params.OBJECT_TYPE == 'keyspace' ? "${name}" : "${name.split('\\.')[1]}"
-                        def filePath = "${directory}/${fileName}"
-
-                        // Ensure the file exists
-                        def fileExists = sh(
-                            script: "test -f ${filePath} && echo 'exists' || echo 'not exists'",
-                            returnStdout: true
-                        ).trim()
-
-                        if (fileExists != 'exists') {
-                            error "Update file for ${params.OBJECT_TYPE} '${name}' not found at ${filePath}. Cannot proceed."
-                        }
-
-                        // Execute the update
-                        echo "Applying update for ${params.OBJECT_TYPE} '${name}' using file ${filePath}."
-                        sh '''
-                            cqlsh ${CASSANDRA_HOST} ${CASSANDRA_PORT} -f "$filePath"
-                        '''.stripMargin()
-                    }
-                }
-            }
+            // Execute the update
+            echo "Applying update using file ${filePath}."
+            sh """
+                cqlsh ${params.CASSANDRA_HOST} ${env.CASSANDRA_PORT} -f "${filePath}"
+            """
+        }
+    }
+}
         }
     }
 
