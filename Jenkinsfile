@@ -144,9 +144,9 @@ stage('Update Keyspace/Table') {
 
             // Execute the update
             echo "Applying update using file ${filePath}."
-            sh """
+            sh '''
                 cqlsh ${params.CASSANDRA_HOST} ${env.CASSANDRA_PORT} -f "${filePath}"
-            """
+            '''
         }
     }
 }
