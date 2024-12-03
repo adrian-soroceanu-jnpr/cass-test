@@ -4,8 +4,8 @@ pipeline {
     parameters {
         choice(
             name: 'OPERATION',
-            choices: ['deploy', 'delete'],
-            description: 'Choose the operation to perform: deploy schema or delete objects'
+            choices: ['deploy', 'delete', 'update'],
+            description: 'Choose the operation to perform: deploy, update, delete objects'
         )
         choice(
             name: 'DEPLOY_FOLDER',
@@ -112,6 +112,39 @@ stage('Validate Deletion Objects') {
                     def folderToDeploy = params.DEPLOY_FOLDER == 'keyspaces' ? '*.cql' : '*.cql'
                     echo "Deploying ${params.DEPLOY_FOLDER} schema to ${env.DEPLOYMENT_ENV} environment on host ${env.CASSANDRA_HOST}..."
                     deployCQLToCassandraDirectly(env.CASSANDRA_HOST, folderToDeploy)
+                }
+            }
+        }
+
+       stage('Update Keyspace/Table') {
+            when {
+                expression { return params.OPERATION == 'update' }
+            }
+            steps {
+                script {
+                    def objectNames = params.OBJECT_NAME.split(',').collect { it.trim() }
+                    def directory = params.OBJECT_TYPE == 'keyspace' ? 'update/keyspace' : 'update/table'
+
+                    objectNames.each { name ->
+                        def fileName = params.OBJECT_TYPE == 'keyspace' ? "${name}_update.cql" : "${name.split('\\.')[1]}_update.cql"
+                        def filePath = "${directory}/${fileName}"
+
+                        // Ensure the file exists
+                        def fileExists = sh(
+                            script: "test -f ${filePath} && echo 'exists' || echo 'not exists'",
+                            returnStdout: true
+                        ).trim()
+
+                        if (fileExists != 'exists') {
+                            error "Update file for ${params.OBJECT_TYPE} '${name}' not found at ${filePath}. Cannot proceed."
+                        }
+
+                        // Execute the update
+                        echo "Applying update for ${params.OBJECT_TYPE} '${name}' using file ${filePath}."
+                        sh """
+                            cqlsh ${params.CASSANDRA_HOST} ${env.CASSANDRA_PORT} -u ${env.CASSANDRA_USER} -p ${env.CASSANDRA_PASSWORD} -f ${filePath}
+                        """
+                    }
                 }
             }
         }
