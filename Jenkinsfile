@@ -1,6 +1,5 @@
 pipeline {
     agent any
-
     parameters {
         choice(
             name: 'OPERATION',
@@ -22,22 +21,22 @@ pipeline {
             choices: ['keyspace', 'table'],
             description: 'Choose the object type to delete (only for delete operation)'
         )
-        choice(name: 'UPDATE_FOLDER', 
-               choices: ['keyspace', 'table'], 
-               description: 'Select the object type to update.')
-        
-        string(name: 'UPDATE_FILE', 
-               defaultValue: '', 
-               description: 'Specify the relative path in the repo, e.g update/table/file_name.cql.')
+        choice(
+            name: 'UPDATE_FOLDER',
+            choices: ['keyspace', 'table'],
+            description: 'Select the object type to update.'
+        )
+        string(
+            name: 'UPDATE_FILE',
+            defaultValue: '',
+            description: 'Specify the relative path in the repo, e.g update/table/file_name.cql.'
+        )
     }
-
     environment {
         // Cassandra credentials and connection details
         CASSANDRA_PORT = '9042' // Default Cassandra port
     }
-
     stages {
-
         stage('Set Environment Based on Branch') {
             steps {
                 script {
@@ -49,110 +48,112 @@ pipeline {
                     env.CASSANDRA_HOST = envDetails.host
                     env.DEPLOYMENT_ENV = envDetails.envName
                     env.GIT_BRANCH = envDetails.gitBranch
-
                     echo "Deploying to environment: ${env.DEPLOYMENT_ENV} on host ${env.CASSANDRA_HOST}, using Git branch: ${env.GIT_BRANCH}"
                 }
             }
         }
-
         stage('Checkout') {
             when {
-                expression { return params.OPERATION == 'deploy' }
+                expression {
+                    return params.OPERATION == 'deploy'
+                }
             }
             steps {
                 // Checkout the code from the corresponding Git branch for each environment
                 git branch: "${env.GIT_BRANCH}", url: 'https://github.com/adrian-soroceanu-jnpr/cass-test.git'
             }
         }
-
-stage('Validate Deletion Objects') {
-    when {
-        expression { return params.OPERATION == 'delete' }
-    }
-    steps {
-        script {
-            def objectNames = params.OBJECT_NAME.split(',').collect { it.trim() }
-
-            // Directories to check based on object type
-            def directory = params.OBJECT_TYPE == 'keyspace' ? 'keyspaces' : 'tables'
-
-            objectNames.each { name ->
-                def searchText = params.OBJECT_TYPE == 'keyspace' ? "CREATE KEYSPACE IF NOT EXISTS ${name}" : "CREATE TABLE IF NOT EXISTS ${name}"
-
-                // Check if the name exists in any .cql file
-                def matchFound = sh(
-                    script: "grep -rl '${searchText}' ${directory} || true",
-                    returnStdout: true
-                ).trim()
-
-                if (matchFound) {
-                    error "Deletion not allowed: ${params.OBJECT_TYPE} '${name}' is still defined in the repository. Found in files:\n${matchFound}"
-                } else {
-                    echo "No match for ${params.OBJECT_TYPE} '${name}' in ${directory}. Proceeding with deletion."
-                }
-            }
-        }
-    }
-}
-
-        
-        stage('Delete Keyspace/Table') {
+        stage('Validate Deletion Objects') {
             when {
-                 allOf {
-                    expression { return params.OPERATION == 'delete' }
-                    expression { return params.OBJECT_NAME?.trim() != '' }
+                expression {
+                    return params.OPERATION == 'delete'
                 }
             }
             steps {
                 script {
-                    def objectNames = params.OBJECT_NAME.split(',').collect { it.trim() }
+                    def objectNames = params.OBJECT_NAME.split(',').collect {
+                        it.trim()
+                    }
+                    // Directories to check based on object type
+                    def directory = params.OBJECT_TYPE == 'keyspace' ? 'keyspaces': 'tables'
+                    objectNames.each {
+                        name -> def searchText = params.OBJECT_TYPE == 'keyspace' ? "CREATE KEYSPACE IF NOT EXISTS ${name}": "CREATE TABLE IF NOT EXISTS ${name}"
+                        // Check if the name exists in any .cql file
+                        def matchFound = sh(
+                            script: "grep -rl '${searchText}' ${directory} || true",
+                            returnStdout: true
+                        ).trim()
+                        if (matchFound) {
+                            error "Deletion not allowed: ${params.OBJECT_TYPE} '${name}' is still defined in the repository. Found in files:\n${matchFound}"
+                        } else {
+                            echo "No match for ${params.OBJECT_TYPE} '${name}' in ${directory}. Proceeding with deletion."
+                        }
+                    }
+                }
+            }
+        }
+        stage('Delete Keyspace/Table') {
+            when {
+                allOf {
+                    expression {
+                        return params.OPERATION == 'delete'
+                    }
+                    expression {
+                        return params.OBJECT_NAME?.trim() != ''
+                    }
+                }
+            }
+            steps {
+                script {
+                    def objectNames = params.OBJECT_NAME.split(',').collect {
+                        it.trim()
+                    }
                     deleteKeyspaceOrTable(params.OBJECT_TYPE, objectNames, env.CASSANDRA_HOST)
                 }
             }
         }
         stage('Deploy Schema') {
             when {
-                expression { return params.OPERATION == 'deploy' }
+                expression {
+                    return params.OPERATION == 'deploy'
+                }
             }
             steps {
                 script {
-                    def folderToDeploy = params.DEPLOY_FOLDER == 'keyspaces' ? '*.cql' : '*.cql'
+                    def folderToDeploy = params.DEPLOY_FOLDER == 'keyspaces' ? '*.cql': '*.cql'
                     echo "Deploying ${params.DEPLOY_FOLDER} schema to ${env.DEPLOYMENT_ENV} environment on host ${env.CASSANDRA_HOST}..."
                     deployCQLToCassandraDirectly(env.CASSANDRA_HOST, folderToDeploy)
                 }
             }
         }
-
-stage('Update Keyspace/Table') {
-    when {
-        expression { return params.OPERATION == 'update' }
-    }
-    steps {
-        script {
-            // Get the file path provided by the user
-            def filePath = params.OBJECT_NAME.trim()
-
-            // Ensure the file exists
-            def fileExists = sh(
-                script: "test -f ${filePath} && echo 'exists' || echo 'not exists'",
-                returnStdout: true
-            ).trim()
-
-            if (fileExists != 'exists') {
-                error "Update file '${filePath}' not found in the repository. Cannot proceed."
+        stage('Update Keyspace/Table') {
+            when {
+                expression {
+                    return params.OPERATION == 'update'
+                }
             }
-
-            // Debugging: Output the file path to ensure it's correct
-            echo "Applying update using file '${filePath}'."
-
-            // Execute the update
-            sh """
+            steps {
+                script {
+                    // Get the file path provided by the user
+                    def filePath = params.OBJECT_NAME.trim()
+                    // Ensure the file exists
+                    def fileExists = sh(
+                        script: "test -f ${filePath} && echo 'exists' || echo 'not exists'",
+                        returnStdout: true
+                    ).trim()
+                    if (fileExists != 'exists') {
+                        error "Update file '${filePath}' not found in the repository. Cannot proceed."
+                    }
+                    // Debugging: Output the file path to ensure it's correct
+                    echo "Applying update using file '${filePath}'."
+                    // Execute the update
+                    sh """
                 cqlsh ${CASSANDRA_HOST} ${CASSANDRA_PORT} \
                     -f ${filePath}
             """
+                }
+            }
         }
-    }
-}
     }
     post {
         success {
@@ -168,13 +169,13 @@ stage('Update Keyspace/Table') {
 def getEnvironmentFromBranch(branchName) {
     switch (branchName) {
         case 'dev':
-            return [envName: 'Development', host: '10.49.234.9', gitBranch: 'dev']
+        return [envName: 'Development', host: '10.49.234.9', gitBranch: 'dev']
         case 'stage':
-            return [envName: 'Staging', host: '10.49.234.9', gitBranch: 'stage']
+        return [envName: 'Staging', host: '10.49.234.9', gitBranch: 'stage']
         case 'prod':
-            return [envName: 'Production', host: '10.49.234.9', gitBranch: 'prod']
-        default:
-            return null
+        return [envName: 'Production', host: '10.49.234.9', gitBranch: 'prod']
+        default :
+        return null
     }
 }
 
@@ -193,15 +194,15 @@ def deleteKeyspaceOrTable(type, names, host) {
     if (!names || names.isEmpty()) {
         error "No objects provided for deletion."
     }
-
     // Ensure names is a list
     if (names instanceof String) {
-        names = names.split(',').collect { it.trim() }
+        names = names.split(',').collect {
+            it.trim()
+        }
     }
-
     // Compile DROP statements
-    def dropCommand = names.collect { name ->
-        if (type == 'keyspace') {
+    def dropCommand = names.collect {
+        name -> if (type == 'keyspace') {
             return "DROP KEYSPACE IF EXISTS ${name};"
         } else if (type == 'table') {
             def parts = name.split("\\.")
@@ -213,7 +214,6 @@ def deleteKeyspaceOrTable(type, names, host) {
             error "Unsupported object type: ${type}"
         }
     }.join("\n")
-
     sh """
         echo "Executing drop command: ${dropCommand}"
         echo "${dropCommand}" | cqlsh ${CASSANDRA_HOST}
