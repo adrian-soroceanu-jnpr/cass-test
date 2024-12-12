@@ -135,7 +135,7 @@ pipeline {
             steps {
                 script {
                     // Get the file path provided by the user
-                    def filePath = params.OBJECT_NAME.trim()
+                    def filePath = params.UPDATE_FOLDER.trim()
                     // Ensure the file exists
                     def fileExists = sh(
                         script: "test -f ${filePath} && echo 'exists' || echo 'not exists'",
