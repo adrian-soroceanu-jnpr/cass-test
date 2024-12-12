@@ -71,13 +71,13 @@ pipeline {
             }
             steps {
                 script {
-                    def objectNames = params.OBJECT_NAME.split(',').collect {
+                    def objectNames = params.DELETE_OBJECT.split(',').collect {
                         it.trim()
                     }
                     // Directories to check based on object type
                     def directory = params.OBJECT_TYPE == 'keyspace' ? 'keyspaces': 'tables'
                     objectNames.each {
-                        name -> def searchText = params.OBJECT_TYPE == 'keyspace' ? "CREATE KEYSPACE IF NOT EXISTS ${name}": "CREATE TABLE IF NOT EXISTS ${name}"
+                        name -> def searchText = params.DELETE_FOLDER == 'keyspace' ? "CREATE KEYSPACE IF NOT EXISTS ${name}": "CREATE TABLE IF NOT EXISTS ${name}"
                         // Check if the name exists in any .cql file
                         def matchFound = sh(
                             script: "grep -rl '${searchText}' ${directory} || true",
