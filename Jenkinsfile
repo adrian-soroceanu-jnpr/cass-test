@@ -99,16 +99,16 @@ pipeline {
                         return params.OPERATION == 'delete'
                     }
                     expression {
-                        return params.OBJECT_NAME?.trim() != ''
+                        return params.DELETE_OBJECT?.trim() != ''
                     }
                 }
             }
             steps {
                 script {
-                    def objectNames = params.OBJECT_NAME.split(',').collect {
+                    def objectNames = params.DELETE_OBJECT.split(',').collect {
                         it.trim()
                     }
-                    deleteKeyspaceOrTable(params.OBJECT_TYPE, objectNames, env.CASSANDRA_HOST)
+                    deleteKeyspaceOrTable(params.DELETE_FOLDER, objectNames, env.CASSANDRA_HOST)
                 }
             }
         }
